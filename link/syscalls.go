@@ -27,6 +27,7 @@ const (
 	TCXType           = sys.BPF_LINK_TYPE_TCX
 	UprobeMultiType   = sys.BPF_LINK_TYPE_UPROBE_MULTI
 	NetfilterType     = sys.BPF_LINK_TYPE_NETFILTER
+	NetkitType        = sys.BPF_LINK_TYPE_NETKIT
 )
 
 var haveProgAttach = internal.NewFeatureTest("BPF_PROG_ATTACH", "4.10", func() error {
