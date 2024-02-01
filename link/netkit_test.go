@@ -5,10 +5,11 @@ import (
 	"net"
 	"testing"
 
-	"github.com/go-quicktest/qt"
-
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/internal/testutils"
+
+	"github.com/go-quicktest/qt"
+	"github.com/vishvananda/netlink"
 )
 
 func TestAttachNetkit(t *testing.T) {
@@ -58,7 +59,18 @@ func TestNetkitAnchor(t *testing.T) {
 }
 
 func mustAttachNetkit(tb testing.TB, prog *ebpf.Program, attachType ebpf.AttachType) (Link, int) {
-	// TODO(hemanthmalla): Update device name based on CI setup
+	var err error
+	nk := &netlink.Netkit{
+		LinkAttrs: netlink.LinkAttrs{
+			Name: "nk1",
+		},
+		Mode:       netlink.NETKIT_MODE_L2,
+		Policy:     netlink.NETKIT_POLICY_FORWARD,
+		PeerPolicy: netlink.NETKIT_POLICY_BLACKHOLE,
+	}
+	err = netlink.LinkAdd(nk)
+	qt.Assert(tb, qt.IsNil(err))
+
 	iface, err := net.InterfaceByName("nk1")
 	qt.Assert(tb, qt.IsNil(err))
 
@@ -68,7 +80,10 @@ func mustAttachNetkit(tb testing.TB, prog *ebpf.Program, attachType ebpf.AttachT
 		Interface: iface.Index,
 	})
 	qt.Assert(tb, qt.IsNil(err))
-	tb.Cleanup(func() { qt.Assert(tb, qt.IsNil(link.Close())) })
+	tb.Cleanup(func() {
+		qt.Assert(tb, qt.IsNil(link.Close()))
+		qt.Assert(tb, qt.IsNil(netlink.LinkDel(nk)))
+	})
 
 	return link, iface.Index
 }
